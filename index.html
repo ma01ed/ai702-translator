@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Machine Translation</title>
+  <link rel="stylesheet" href="static/theme_3.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Many to Many Machine Translation of Arabic Dialect to MSA and English</h1>
+    <p>
+      The lack of many-to-many translation systems for Arabic dialects poses a challenge to developing accurate machine translation systems for Emirati Arabic, which has unique linguistic characteristics that distinguish it from other Arabic dialects. The scarcity of dialectal datasets is a major challenge in developing machine translation systems for Emirati Arabic, as building such datasets requires considerable effort and resources, and the scarcity of written materials in Emirati Arabic limits the availability of written resources that can be used to train machine translation models. This paper presents an approach for many-to-many machine translation of Emirati Arabic to Modern Standard Arabic and English using curated and supplemented datasets. The approach involves building two main models and creating a diagnostic dataset to support further evaluations of the accuracy of Arabic (Emirati) translation to MSA, to English, and any combination thereof.
+    </p>
+    <form>
+      <label for="source-lang">Source language:</label>
+      <select id="source-lang" name="source-lang">
+        <option value="en">English</option>
+        <option value="ar">Arabic (MSA)</option>
+        <option value="ar_EM">Arabic (Emirati)</option>
+      </select>
+      <label for="target-lang">Target language:</label>
+      <select id="target-lang" name="target-lang">
+        <option value="ar">Arabic (MSA)</option>
+        <option value="ar_EM">Arabic (Emirati)</option>
+        <option value="en">English</option>
+      </select>
+      <label for="source-text">Source text:</label>
+      <textarea id="source-text" name="source-text" placeholder="Enter your text here..."></textarea>
+      <button id="translate-btn" type="button">Translate</button>
+    </form>
+    <div class="loader"></div>
+    <div id="translation-result"></div>
+  </div>
+
+  <script>
+    const sourceLangSelect = document.querySelector('#source-lang');
+    const targetLangSelect = document.querySelector('#target-lang');
+
+    sourceLangSelect.addEventListener('change', () => {
+      const selectedSourceLang = sourceLangSelect.value;
+      const selectedTargetLang = targetLangSelect.value;
+
+      // remove the option with the same value as the selected source language from the target language select element
+      Array.from(targetLangSelect.options).forEach((option) => {
+        if (option.value === selectedSourceLang) {
+          option.disabled = true;
+        } else {
+          option.disabled = false;
+        }
+      });
+
+      // if the target language was the same as the selected source language, change it to English
+      if (selectedSourceLang === selectedTargetLang) {
+        targetLangSelect.value = 'en';
+      }
+    });
+
+    targetLangSelect.addEventListener('change', () => {
+      const selectedSourceLang = sourceLangSelect.value;
+      const selectedTargetLang = targetLangSelect.value;
+
+      // remove the option with the same value as the selected target language from the source language select element
+      Array.from(sourceLangSelect.options).forEach((option) => {
+        if (option.value === selectedTargetLang) {
+          option.disabled = true;
+        } else {
+          option.disabled = false;
+        }
+      });
+
+      // if the source language was the same as the selected target language, change it to English
+      if (selectedSourceLang === selectedTargetLang) {
+        sourceLangSelect.value = 'en';
+      }
+    });
+
+
+
+    const translateBtn = document.querySelector('#translate-btn');
+    const loader = document.querySelector('.loader');
+    const translationResult = document.querySelector('#translation-result');
+
+    translateBtn.addEventListener('click', () => {
+      loader.style.display = 'block';
+      translationResult.innerHTML = '';
+
+      const sourceLang = document.querySelector('#source-lang').value;
+      const targetLang = document.querySelector('#target-lang').value;
+      const sourceText = document.querySelector('#source-text').value;
+      const fromLangToLang = `translation_${sourceLang}_to_${targetLang}`;
+
+      fetch('/translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          translate_from_to: fromLangToLang,
+          // model: "Test",
+          input_text: sourceText
+        })
+      })
+        .then(response => response.json())
+        .then(data => {
+            console.log('data is', data)
+          const translation = data.output_text;
+          translationResult.innerHTML = `<div class="tr-result-text"><label>Translation:</label><p style="${targetLang == 'ar' ? 'rtl' : 'ltr'}">${translation}</p></div>`;
+          loader.style.display = 'none';
+        })
+        .catch(error => {
+          translationResult.innerHTML = `<div class="tr-result-text"><label>Error:</label><p>An error occurred while translating: ${error}</p></div>`;
+          loader.style.display = 'none';
+        });
+      });
+</script>
+</body>
+</html>
